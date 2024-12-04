@@ -6,6 +6,8 @@ And I use the official unity-catalog python sdk https://pypi.org/project/unityca
 
 # Setup
 
+## Up infra
+
 ````bash
 docker compose -f "docker-compose.yml" up -d --build
 ````
@@ -29,6 +31,7 @@ aws_access_key_id=minioadmin
 aws_secret_access_key=minioadmin
 ````
 
+## Python scripts
 Setup python env with the tool of your choice
 
 with pyenv+virtualenv and python3.10
@@ -54,3 +57,17 @@ python python/train.py
 See 
  - on mlflow experiment tracking the run : `http://localhost:5000/#/experiments/1`
  - (optional) on minio under the hood : `http://localhost:9001/browser/mlflow-artifacts/`
+
+## Inference
+
+find the run id to fill the uri
+````bash
+mlflow models serve -m s3://mlflow-artifacts/1/80d45aadbbf44f93ac6004f9d35c8deb/artifacts/model -p 5001
+````
+
+Call the inference service from where you want
+````bash
+curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"}]}'
+curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"},{"x1":"3","x2":"4"}]}'
+
+````

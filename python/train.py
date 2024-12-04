@@ -19,7 +19,7 @@ from unitycatalog_client.rest import ApiException
 s3 = boto3.client("s3")
 s3.list_buckets()
 mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment("/my-experiment")
+mlflow.set_experiment("my-experiment")
 mlflow.set_registry_uri("http://localhost:8999")
 # mlflow.set_registry_uri("uc:http://localhost:8080")  # uc
 # os.environ["MLFLOW_UC_OSS_TOKEN"] = "<your OSS UC access token>"
