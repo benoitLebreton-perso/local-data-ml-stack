@@ -1,0 +1,7 @@
+boto3
+mlflow
+polars[deltalake]
+psycopg2-binary
+s3fs
+sqlalchemy
+unitycatalog_client

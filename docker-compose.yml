@@ -1,0 +1,85 @@
+version: '3'
+services:
+  minio:
+      hostname: minio
+      image: 'minio/minio'
+      container_name: minio
+      ports:
+        - '8999:9000'
+        - '9001:9001'
+      environment:
+        - MINIO_ROOT_USER=minioadmin
+        - MINIO_ROOT_PASSWORD=minioadmin
+      networks:
+        - data_platform_network
+      volumes:
+        - './minio/data:/data'
+      command: server /data --console-address ":9001"
+  postgres:
+    hostname: postgres
+    image: debezium/example-postgres:1.6
+    container_name: debezium-postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DATABASE=postgres
+    volumes:
+    - './postgres/data:/var/lib/postgresql'
+    networks:
+      - data_platform_network
+  mlflow:
+    container_name: mlflow-postgres
+    build:
+      dockerfile: mlflow/Dockerfile.mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      - BACKEND_URI=postgresql://postgres:postgres@postgres:5432
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - MLFLOW_ENABLE_UC_VOLUME_FUSE_ARTIFACT_REPO=true
+      - MLFLOW_ENABLE_UC_FUNCTIONS=true
+      - MLFLOW_S3_IGNORE_TLS=true
+      # - ARTIFACT_ROOT="s3://mlflow-artifacts/"
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      # minio_user : mlflow mlflowmlflow                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+    networks:
+      - data_platform_network
+    depends_on:
+      - postgres
+      - minio
+    command: >
+      mlflow server 
+      --backend-store-uri postgresql://postgres:postgres@postgres:5432/postgres 
+      --default-artifact-root s3://mlflow-artifacts --host 0.0.0.0
+  uc:
+    image: godatadriven/unity-catalog
+    ports:
+      - 8080:8080
+    volumes:
+      - './uc-data:/app/unitycatlog'
+  ucui:
+    container_name: ducklake-ucui
+    build:
+      dockerfile: unitycatlog/Dockerfile.ucui
+      args:
+        UC_HOST: http://uc:8080
+    ports:
+      - 3000:3000
+    depends_on:
+      - uc
+# trino:
+#     hostname: trino
+#     image: 'trinodb/trino:351'
+#     ports:
+#       - '8080:8080'
+#     volumes:
+#       - ./etc:/usr/lib/trino/etc:ro
+#     networks:
+#       - data_platform_network
+networks:
+  data_platform_network:
+    driver: bridge
+    name: data_platform_network
