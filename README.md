@@ -60,7 +60,11 @@ See
 
 ## Inference
 
-find the run id to fill the uri
+find the run id to fill the uri. 
+TODO : Use UnityCatalog to follow this id ?
+I think I will make a real FastAPI service for the inference and 
+- use Unity Catalog in it to find the model
+- log the inference in mlflow or log in in the lakehouse
 ````bash
 mlflow models serve -m s3://mlflow-artifacts/1/80d45aadbbf44f93ac6004f9d35c8deb/artifacts/model -p 5001
 ````
