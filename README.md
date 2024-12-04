@@ -1,7 +1,7 @@
 # Purpose
 
 I try to do the same thing as https://github.com/VillePuuska/Local-Lakehouse/tree/main but with more ML tools (mlflow).
-And I use the official unity-catalog python sdk.
+And I use the official unity-catalog python sdk https://pypi.org/project/unitycatalog-client/.
 
 
 # Setup
@@ -31,7 +31,7 @@ aws_secret_access_key=minioadmin
 
 Setup python env with the tool of your choice
 
-with pyenv+virtualenv and python10
+with pyenv+virtualenv and python3.10
 ````
 pyenv virtualenv 3.10.15 venv
 pip install -r python/requirements.txt
