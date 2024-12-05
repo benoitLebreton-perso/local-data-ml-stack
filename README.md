@@ -87,18 +87,31 @@ See
 ![minio-mlflow-artifact-under-ther-hood](docs/minio-mlflow-artifact-under-the-hood.png)
 ## Inference
 
-find the run id to fill the uri. 
+Find the uri in the registry on minio or mlflow.
+
+````console
+(venv) ➜  modern_data_stack git:(main) ✗ mlflow models serve -m s3://mlflow-artifacts/1/aa2110d499664590be2aef98ee7d5ac1/artifacts/model -p 5001 --no-conda
+2024/12/05 21:49:11 INFO mlflow.models.flavor_backend_registry: Selected backend for flavor 'python_function'
+2024/12/05 21:49:11 INFO mlflow.pyfunc.backend: === Running command 'exec gunicorn --timeout=60 -b 127.0.0.1:5001 -w 1 ${GUNICORN_CMD_ARGS} -- mlflow.pyfunc.scoring_server.wsgi:app'
+[2024-12-05 21:49:11 +0100] [13864] [INFO] Starting gunicorn 23.0.0
+[2024-12-05 21:49:11 +0100] [13864] [INFO] Listening at: http://127.0.0.1:5001 (13864)
+[2024-12-05 21:49:11 +0100] [13864] [INFO] Using worker: sync
+[2024-12-05 21:49:11 +0100] [13870] [INFO] Booting worker with pid: 13870
+````
+
+Call the inference service from where you want
+
+````console
+(venv) ➜  modern_data_stack git:(main) ✗ curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"}]}'
+{"predictions": [0]}%  
+````
+
+```console
+(venv) ➜  modern_data_stack git:(main) ✗ curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"},{"x1":"3","x2":"4"}]}'
+{"predictions": [0, 0]}%  
+```
+
 TODO : Use UnityCatalog to follow this id ?
 I think I will make a real FastAPI service for the inference and 
 - use Unity Catalog in it to find the model
 - log the inference in mlflow or log in in the lakehouse
-````bash
-mlflow models serve -m s3://mlflow-artifacts/1/80d45aadbbf44f93ac6004f9d35c8deb/artifacts/model -p 5001
-````
-
-Call the inference service from where you want
-````bash
-curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"}]}'
-curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"},{"x1":"3","x2":"4"}]}'
-
-````
