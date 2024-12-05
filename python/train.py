@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 import mlflow
 import unitycatalog_client
+from unitycatalog_client.models import CreateRegisteredModel
 from unitycatalog_client.rest import ApiException
 
 
@@ -31,7 +32,10 @@ configuration = unitycatalog_client.Configuration(
     host="http://localhost:8080/api/2.1/unity-catalog"
 )
 
-with unitycatalog_client.ApiClient(configuration) as api_client:
+with (
+    unitycatalog_client.ApiClient(configuration) as api_client,
+    mlflow.start_run() as run
+):
     table_api = unitycatalog_client.TablesApi(api_client)
     try:
         train_table = table_api.get_table("finance.bronze.score_table")
@@ -41,14 +45,27 @@ with unitycatalog_client.ApiClient(configuration) as api_client:
     except ApiException as e:
         print(e)
 
-data = pd.read_parquet(
-    location,
-    storage_options={"client_kwargs": {"endpoint_url": "http://localhost:8999"}},
-)
-X = data.drop(columns=["y"])
-y = data.filter(["y"])
-with mlflow.start_run() as run:
+    data = pd.read_parquet(
+        location,
+        storage_options={"client_kwargs": {"endpoint_url": "http://localhost:8999"}},
+    )
+    X = data.drop(columns=["y"])
+    y = data.filter(["y"])
     clf = RandomForestClassifier()
     clf.fit(X=X, y=y)
     mlflow.log_metric("accuracy", 0.8)
     # mlflow.sklearn.log_model(clf, artifact_path="artifacts")
+    models_api = unitycatalog_client.RegisteredModelsApi(api_client)
+    create_registered_model = CreateRegisteredModel(
+        name="score_model3",
+        catalog_name="finance",
+        schema_name="bronze",
+        comment="this model aims to blabla"
+    )
+    try:
+        models_response = models_api.create_registered_model(create_registered_model)
+        check_freshness = models_response.updated_at
+        location = models_response.storage_location
+        print("freshness : ", check_freshness)
+    except ApiException as e:
+        print(e)
