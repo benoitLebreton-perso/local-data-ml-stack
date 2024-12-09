@@ -1,6 +1,8 @@
 boto3
 mlflow
-polars[deltalake]
+# polars-lts-cpu
+polars
+pandera[polars]
 psycopg2-binary
 s3fs
 sqlalchemy

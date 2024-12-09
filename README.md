@@ -14,15 +14,6 @@ docker compose -f "docker-compose.yml" up -d --build
 
 ### Minio
 
-On minio http://localhost:9001 you need to :
-- login (user: minioadmin pass: minioadmin)
-- create two buckets
-    - landing-bronze
-    - mlflow-artifacts
-- Optional : create two users in Identity/Users and use the access-keys instead of the admin-access
-    - etl : with a corresponding access-key / secret-key and use those in `~/.aws/credentials`
-    - mlflow : with a corresponding access-key / secret-key and use those in mlflow container
-
 On you computer write `~/.aws/credentials` file
 ````conf
 [default]
@@ -33,24 +24,30 @@ aws_access_key_id=minioadmin
 aws_secret_access_key=minioadmin
 ````
 
-### Postgres
+On minio `http://localhost:9001` you need to :
+- login (user: minioadmin pass: minioadmin)
+- create three buckets (you can execute `python setup_minio.py` to do it programmatically)
+    - landing-bronze
+    - lake-gold
+    - mlflow-artifacts
+    - (optional) unitycatalog-artifacts
+- (optional) : create two users in Identity/Users and use the access-keys instead of the admin-access
+    - etl : with a corresponding access-key / secret-key and use those in `~/.aws/credentials`
+    - mlflow : with a corresponding access-key / secret-key and use those in mlflow container
 
-Prerequisites : install libq with brew for macOs
+## Application db
 
-````bash
-psql postgres://postgres:postgres@localhost:5432/postgres
-````
+In this example, we have two data sources
+- `web_app` the users from the web app with web app data like cookies
+- `shop` the transactions from the local shop
 
-````postgres=# 
-create database ucdata;
-create database mlflowdata;
-````
+The two data sources are related to the marketing analytics so we will load them and connect them in the lakehouse using a `user_id`.
 
-or directly
-````bash
-psql postgres://postgres:postgres@localhost:5432/postgres -c 'create database ucdb;'
-psql postgres://postgres:postgres@localhost:5432/postgres -c 'create database mlflowdb;'
-````
+## Unity catalog
+
+This is an early adoption. So please git clone the official repo and execute the compose.yaml.
+Or run it using the tarball.
+
 
 ## Python scripts
 Setup python env with the tool of your choice
@@ -60,14 +57,22 @@ with pyenv+virtualenv and python3.10
 pyenv virtualenv 3.10.15 venv
 pip install -r python/requirements.txt
 ````
+Run `data contract` to register your tables in Unity Catalog
+````
+python python/data_contract.py
+````
 
-Run ETL to create data into the lakehouse (with unity catalog metadata)
+Run ingestion to the lakehouse langing zone (bronze layer)
+````
+python python/ingest.py
+````
+Run ETL to clean data from bronze to gold. It cast the `amount` transactions column to float and create rfm segment column for the users.
 ````
 python python/etl.py
 ````
 
 See 
- - on unity catalog the metadata : `http://localhost:3000/data/finance/bronze/score_table`
+ - on unity catalog the metadata : `http://localhost:3000/data/marketing/bronze`
  - on minio the data : `http://localhost:9001/browser/landing-bronze`
 
 ![unity-catalog](docs/unity-ui.png "Unity Catalog")
@@ -102,16 +107,16 @@ Find the uri in the registry on minio or mlflow.
 Call the inference service from where you want
 
 ````console
-(venv) ➜  modern_data_stack git:(main) ✗ curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"}]}'
+(venv) ➜  modern_data_stack git:(main) ✗ curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"CHAMPIONS":"0","NEW_FANS":"0","ROOKIES":"0","SLIPPING":"0","WHALES":"1"}]}'
 {"predictions": [0]}%  
 ````
 
 ```console
-(venv) ➜  modern_data_stack git:(main) ✗ curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"x1":"0","x2":"1"},{"x1":"3","x2":"4"}]}'
+(venv) ➜  modern_data_stack git:(main) ✗ curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{"inputs":[{"CHAMPIONS":"0","NEW_FANS":"1","ROOKIES":"0","SLIPPING":"0","WHALES":"0"},{"CHAMPIONS":"1","NEW_FANS":"0","ROOKIES":"0","SLIPPING":"0","WHALES":"0"}]}'
 {"predictions": [0, 0]}%  
 ```
 
-TODO : Use UnityCatalog to follow this id ?
+TODO : Use UnityCatalog to follow this run id / model id ?
 I think I will make a real FastAPI service for the inference and 
 - use Unity Catalog in it to find the model
 - log the inference in mlflow or log in in the lakehouse
