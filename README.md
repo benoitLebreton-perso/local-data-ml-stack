@@ -3,6 +3,18 @@
 I try to do the same thing as https://github.com/VillePuuska/Local-Lakehouse/tree/main but with more ML tools (mlflow).
 And I use the official unity-catalog python sdk https://pypi.org/project/unitycatalog-client/.
 
+We setup a local lakehouse with
+- a minio storage
+- a unity catalog metastore
+- 2 data sources from 2 postgresql database
+- a mlflow server
+
+We write python code to feed the lakehouse in 4 steps:
+
+1) data contract : send metadata to the metastore (unity catalog)
+2) ingest : load data from the sources (web app db and shop db in the postgreql instance) and write the the landing zone (bronze)
+3) etl : load data from bronze, transform it (create `rfm` column) and write it to gold layer
+4) train : load data from gold layer and train a RandomForest dummy model, tack the run in mlflow and write the model into mlflow-registy
 
 # Setup
 
