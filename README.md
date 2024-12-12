@@ -1,7 +1,11 @@
 # Purpose
 
-I try to do the same thing as https://github.com/VillePuuska/Local-Lakehouse/tree/main but with more ML tools (mlflow).
-And I use the official unity-catalog python sdk https://pypi.org/project/unitycatalog-client/.
+I try to do the same thing as 
+- https://github.com/VillePuuska/Local-Lakehouse/tree/main
+- https://github.com/zsvoboda/ngods-stocks
+
+
+But with different tools
 
 We setup a local lakehouse with
 - a minio storage
